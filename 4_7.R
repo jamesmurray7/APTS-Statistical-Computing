@@ -4,41 +4,61 @@
 
 rm(list=ls())
 
-# Question 1 --------------------------------------------------------------
+# Question 7 --------------------------------------------------------------
 
-# a)
-eps <- 1
-x <- 1
-while(x + eps != x) eps <- eps/2
-eps/x
+# a) ----
+?optim
 
-# b)
-x == x + eps #TRUE
-
-# c)
-2*eps == .Machine$double.eps # TRUE
-
-# d)
-epsx <- function(x){
-  eps <- 1
-  while(x + eps != x) eps <- eps/2
-  return(eps/x)
-}
-store <- list()
-p <- 1
-for(i in c(1/8, 1/4, 1/2, 1, 2, 4, 8)){
-  store[[p]] <- epsx(i)
-  p <- p+1
+# b) ---- 
+# From the last exercise (4_6.R)
+rb <- function(X){
+  x <- X[1]
+  z <- X[2]
+  return(
+    100 * (z - x^2)^2 + (1-x)^2
+  )
 }
 
-length(which(store == epsx(1/2))) # Cant remember how to use isTRUE(all)!
+rb.grad <- function(X){
+  x <- X[1]
+  z <- X[2]
+  dfdx <- 2 * (200 * x^3 - 200 * x * z + x - 1)
+  dfdz <- 200 * (z - x^2)
+  return(c(dfdx, dfdz))
+}
 
-# e)
-epsx(2+1e-5) # Not the same number
+# c) ----
+optim(c(-0.5, 1), fn = rb, gr = rb.grad)
+# Converges (code:0),
+# Minimum accurate to 3 d.p.
 
-# f)
-small.inc <- 1e-16
-while(epsx(2 + small.inc) == epsx(2)) small.inc <- small.inc * 10
+# d) ----
+optim(c(-0.5, 1), fn = rb, method = "BFGS")
+# 119 Function evaluations (i.e. of rb?) used
+# Minimum accurate to 4 d.p.
 
-# 16 decimal places(?)
+# e) ----
+optim(c(-0.5, 1), fn = rb, gr = rb.grad, method = "BFGS")
+# Uses fewer function evaluations (111)
+# And finds extremeley accurate values of x=1,z=1 reported.
 
+# f) ----
+optim(c(-0.5, 1), fn = rb, gr = rb.grad, method = "CG")
+# Reaches maxit with estimate 1.2, 1.5 and 400+ function calls.
+optim(c(-0.5, 1), fn = rb, gr = rb.grad, method = "CG",
+      control = list(maxit = 1000))
+d <- optim(c(-0.5, 1), fn = rb, gr = rb.grad, method = "CG",
+           control = list(maxit = 1000))
+
+# Do a while loop to get ballpark answer...
+conv <- 1
+max.iter <- 1000
+while(conv != 0){
+  d <- optim(c(-0.5, 1), fn = rb, gr = rb.grad, method = "CG",
+  control = list(maxit = max.iter))
+  conv <- d$convergence
+  max.iter <- max.iter + 100
+  message(max.iter, " ", conv)
+}
+
+# About 10.4k iterations needed for convergence of this method.
